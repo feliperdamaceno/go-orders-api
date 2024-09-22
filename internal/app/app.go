@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/feliperdamaceno/go-orders-api/config"
 	"github.com/feliperdamaceno/go-orders-api/internal/handler"
@@ -40,11 +41,31 @@ func (a *App) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize redis: %w", err)
 	}
 
-	fmt.Printf("server running on http://%v:%v", host, port)
-	err = server.ListenAndServe()
-	if err != nil {
-		return fmt.Errorf("failed to initialize server: %w", err)
-	}
+	defer func() {
+		if err := a.rds.Close(); err != nil {
+			fmt.Println("failed to close redis: %w", err)
+		}
+	}()
 
-	return nil
+	fmt.Printf("server running on http://%v:%v", host, port)
+
+	ch := make(chan error, 1)
+
+	go func() {
+		err = server.ListenAndServe()
+		if err != nil {
+			ch <- fmt.Errorf("failed to initialize server: %w", err)
+		}
+		close(ch)
+	}()
+
+	select {
+	case err = <-ch:
+		return err
+	case <-ctx.Done():
+		timeout, stop := context.WithTimeout(context.Background(), time.Second*10)
+		defer stop()
+
+		return server.Shutdown(timeout)
+	}
 }
