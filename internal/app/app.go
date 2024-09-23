@@ -17,10 +17,8 @@ type App struct {
 }
 
 func New() *App {
-	config.LoadConfig()
-
 	app := &App{
-		router: handler.GetRoutes(),
+		router: handler.LoadRoutes(),
 		rds:    redis.NewClient(&redis.Options{}),
 	}
 
@@ -28,15 +26,18 @@ func New() *App {
 }
 
 func (a *App) Start(ctx context.Context) error {
-	port := config.Config.PORT
-	host := config.Config.HOST
+	config, err := config.NewConfig()
+
+	if err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%v:%v", host, port),
+		Addr:    fmt.Sprintf("%v:%v", config.Host, config.Port),
 		Handler: a.router,
 	}
 
-	err := a.rds.Ping(ctx).Err()
+	err = a.rds.Ping(ctx).Err()
 	if err != nil {
 		return fmt.Errorf("failed to initialize redis: %w", err)
 	}
@@ -47,7 +48,7 @@ func (a *App) Start(ctx context.Context) error {
 		}
 	}()
 
-	fmt.Printf("server running on http://%v:%v", host, port)
+	fmt.Printf("server running on http://%v:%v", config.Host, config.Port)
 
 	ch := make(chan error, 1)
 

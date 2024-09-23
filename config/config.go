@@ -7,23 +7,23 @@ import (
 )
 
 type AppConfig struct {
-	HOST string
-	PORT string
+	Host string
+	Port string
 }
 
-var Config = AppConfig{}
-
-func LoadConfig() error {
+func NewConfig() (*AppConfig, error) {
 	err := godotenv.Load()
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	Config.HOST = getEnv("HOST", "localhost")
-	Config.PORT = getEnv("PORT", "8000")
+	config := &AppConfig{
+		Host: getEnv("HOST", "localhost"),
+		Port: getEnv("PORT", "8000"),
+	}
 
-	return nil
+	return config, nil
 }
 
 func getEnv(key string, defaultValue string) string {
