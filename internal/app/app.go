@@ -48,7 +48,7 @@ func (a *App) Start(ctx context.Context) error {
 		}
 	}()
 
-	fmt.Printf("server running on http://%v:%v", config.Host, config.Port)
+	fmt.Printf("server running on http://%v:%v\n", config.Host, config.Port)
 
 	ch := make(chan error, 1)
 
