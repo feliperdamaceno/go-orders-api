@@ -10,7 +10,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type RedisRepository struct {
+type RedisRepo struct {
 	Client *redis.Client
 }
 
@@ -20,7 +20,7 @@ func orderIdToKey(id uint64) string {
 
 var ErrNotExist = errors.New("order do not exist")
 
-func (r *RedisRepository) Create(ctx context.Context, order model.Order) error {
+func (r *RedisRepo) Create(ctx context.Context, order model.Order) error {
 	data, err := json.Marshal(order)
 	if err != nil {
 		return fmt.Errorf("failed to encode order: %w", err)
@@ -50,7 +50,7 @@ func (r *RedisRepository) Create(ctx context.Context, order model.Order) error {
 }
 
 type GetAllPage struct {
-	Count  uint64
+	Size   uint64
 	Cursor uint64
 }
 
@@ -59,8 +59,8 @@ type GetResult struct {
 	Cursor uint64
 }
 
-func (r *RedisRepository) GetAll(ctx context.Context, page GetAllPage) (GetResult, error) {
-	response := r.Client.SScan(ctx, "orders", page.Cursor, "*", int64(page.Count))
+func (r *RedisRepo) GetAll(ctx context.Context, page GetAllPage) (GetResult, error) {
+	response := r.Client.SScan(ctx, "orders", page.Cursor, "*", int64(page.Size))
 
 	keys, cursor, err := response.Result()
 	if err != nil {
@@ -97,7 +97,7 @@ func (r *RedisRepository) GetAll(ctx context.Context, page GetAllPage) (GetResul
 	}, nil
 }
 
-func (r *RedisRepository) GetById(ctx context.Context, id uint64) (model.Order, error) {
+func (r *RedisRepo) GetById(ctx context.Context, id uint64) (model.Order, error) {
 	key := orderIdToKey(id)
 
 	value, err := r.Client.Get(ctx, key).Result()
@@ -119,7 +119,7 @@ func (r *RedisRepository) GetById(ctx context.Context, id uint64) (model.Order, 
 	return order, nil
 }
 
-func (r *RedisRepository) UpdateById(ctx context.Context, order model.Order) error {
+func (r *RedisRepo) UpdateById(ctx context.Context, order model.Order) error {
 	data, err := json.Marshal(order)
 	if err != nil {
 		return fmt.Errorf("failed to encode order: %w", err)
@@ -139,7 +139,7 @@ func (r *RedisRepository) UpdateById(ctx context.Context, order model.Order) err
 	return nil
 }
 
-func (r *RedisRepository) DeleteById(ctx context.Context, id uint64) error {
+func (r *RedisRepo) DeleteById(ctx context.Context, id uint64) error {
 	key := orderIdToKey(id)
 
 	transaction := r.Client.TxPipeline()

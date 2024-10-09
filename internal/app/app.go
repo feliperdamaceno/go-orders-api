@@ -7,20 +7,20 @@ import (
 	"time"
 
 	"github.com/feliperdamaceno/go-orders-api/config"
-	"github.com/feliperdamaceno/go-orders-api/internal/handler"
 	"github.com/redis/go-redis/v9"
 )
 
 type App struct {
-	router http.Handler
-	rds    *redis.Client
+	Router http.Handler
+	Rds    *redis.Client
 }
 
 func New() *App {
 	app := &App{
-		router: handler.LoadRoutes(),
-		rds:    redis.NewClient(&redis.Options{}),
+		Rds: redis.NewClient(&redis.Options{}),
 	}
+
+	app.LoadRoutes()
 
 	return app
 }
@@ -34,16 +34,16 @@ func (a *App) Start(ctx context.Context) error {
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%v:%v", config.Host, config.Port),
-		Handler: a.router,
+		Handler: a.Router,
 	}
 
-	err = a.rds.Ping(ctx).Err()
+	err = a.Rds.Ping(ctx).Err()
 	if err != nil {
 		return fmt.Errorf("failed to initialize redis: %w", err)
 	}
 
 	defer func() {
-		if err := a.rds.Close(); err != nil {
+		if err := a.Rds.Close(); err != nil {
 			fmt.Println("failed to close redis: %w", err)
 		}
 	}()

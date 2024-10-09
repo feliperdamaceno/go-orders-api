@@ -1,13 +1,15 @@
-package handler
+package app
 
 import (
 	"net/http"
 
+	"github.com/feliperdamaceno/go-orders-api/internal/handler"
+	"github.com/feliperdamaceno/go-orders-api/internal/repository/order"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
 
-func LoadRoutes() *chi.Mux {
+func (a *App) LoadRoutes() {
 	router := chi.NewRouter()
 
 	router.Use(middleware.Logger)
@@ -17,7 +19,11 @@ func LoadRoutes() *chi.Mux {
 	})
 
 	router.Route("/orders", func(router chi.Router) {
-		order := &OrderHandler{}
+		order := &handler.OrderHandler{
+			Repo: &order.RedisRepo{
+				Client: a.Rds,
+			},
+		}
 
 		router.Post("/", order.Create)
 		router.Get("/", order.GetAll)
@@ -27,5 +33,5 @@ func LoadRoutes() *chi.Mux {
 	},
 	)
 
-	return router
+	a.Router = router
 }
